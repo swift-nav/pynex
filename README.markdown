@@ -1,0 +1,5 @@
+pyNEX
+=====
+
+Python RINEX utilities
+
