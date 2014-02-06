@@ -196,10 +196,9 @@ def main():
 
     if args.info:
         if args.marker_name is None:
-          print "Marker Name:", rf.marker_name
+            print "Marker Name:", rf.marker_name
         else:
-          print "Marker Name: %s (overriden, was %s)" % (args.marker_name, rf.marker_name)
-          rf.marker_name = args.marker_name
+            print "Marker Name: %s (overriden, was %s)" % (args.marker_name, rf.marker_name)
         print "RINEX Version:", rf.version
         if rf.comment != '':
             print "Comment:"
@@ -208,6 +207,9 @@ def main():
         print "Satellites:", ', '.join(rf.data.axes[0])
         print "Total %d observations:\n\tfrom\t%s\n\tto\t%s" % \
             (len(rf.data.axes[1]), rf.data.axes[1][0], rf.data.axes[1][-1])
+
+    if args.marker_name is not None:
+        rf.marker_name = args.marker_name
 
     rf.save_hdf5(args.output)
 
