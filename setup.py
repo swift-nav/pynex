@@ -3,7 +3,7 @@
 from version import get_git_version
 
 setup_args = dict(
-  name = 'pyNEX',
+  name = 'pynex',
   version = get_git_version(),
   description = 'Python RINEX utilities',
   license = 'GPLv3',
@@ -17,7 +17,8 @@ setup_args = dict(
 
   entry_points = {
     'console_scripts': [
-      'pynex = pynex.run:main',
+      'pynex = pynex.rinex_file:main',
+      'ddtool = pynex.dd_tools:main',
     ]
   },
 

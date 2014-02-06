@@ -1,5 +1,17 @@
+#!/usr/bin/env python
+
+# Copyright (C) 2014 Swift Navigation Inc.
+#
+# This source is subject to the license found in the file 'LICENSE' which must
+# be be distributed together with this source. All other rights reserved.
+#
+# THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+# EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
+
 import datetime
 import pandas
+import numpy as np
 
 def floatornan(x):
     if x == '' or x[-1] == ' ':
@@ -22,19 +34,20 @@ TOTAL_SATS = 32
 
 class RINEXFile:
     def __init__(self, filename):
-        with open(filetype, 'r') as f:
+        with open(filename, 'r') as f:
+          self._read_header(f)
           self._read_data(f)
 
     def save_hdf5(self, filename, append=True):
         h5 = pandas.HDFStore(filename, 'a' if append else 'w')
-        h5[self.station_name] = self.data
+        h5[self.marker_name] = self.data
         h5.close()
 
     def _read_header(self, f):
         version_line = padline(f.readline(), 80)
 
         self.version = float(version_line[0:9])
-        if (self.version > 2.11)
+        if (self.version > 2.11):
             raise ValueError("RINEX file versions > 2.11 not supported (file version %f)" % self.version)
 
         self.filetype = version_line[20]
@@ -62,6 +75,8 @@ class RINEXFile:
                 self.comment += line[:60] + '\n'
             if label == "MARKER NAME":
                 self.marker_name = line[:60].rstrip()
+                if self.marker_name == '':
+                  self.marker_name = 'UNKNOWN'
             if label == "# / TYPES OF OBSERV":
                 n_obs = int(line[0:6])
                 self.obs_types = []
@@ -159,4 +174,43 @@ class RINEXFile:
             ).dropna(axis=0, how='all').dropna(axis=2, how='all'))
 
         self.data = pandas.concat(obs_data_chunks)
+
+
+def main():
+    import sys
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input",
+                        help="the RINEX file to process")
+    parser.add_argument("output",
+                        help="the output HDF5 file name")
+    parser.add_argument("-n", "--marker-name", default=None,
+                        help="override RINEX marker name")
+    parser.add_argument("-I", "--info",
+                        help="print information about the RINEX file",
+                        action="store_true")
+    args = parser.parse_args()
+
+    rf = RINEXFile(args.input)
+
+    if args.info:
+        if args.marker_name is None:
+          print "Marker Name:", rf.marker_name
+        else:
+          print "Marker Name: %s (overriden, was %s)" % (args.marker_name, rf.marker_name)
+          rf.marker_name = args.marker_name
+        print "RINEX Version:", rf.version
+        if rf.comment != '':
+            print "Comment:"
+            print rf.comment
+        print "Obervation types:", ', '.join(rf.data.axes[2])
+        print "Satellites:", ', '.join(rf.data.axes[0])
+        print "Total %d observations:\n\tfrom\t%s\n\tto\t%s" % \
+            (len(rf.data.axes[1]), rf.data.axes[1][0], rf.data.axes[1][-1])
+
+    rf.save_hdf5(args.output)
+
+if __name__ == '__main__':
+    main()
 
