@@ -43,7 +43,7 @@ def propagate(a, b):
 
 def sds(a, b):
     a_, b_ = a, b #propagate(a, b)
-    sd = a_.sub(b_)
+    sd = (a_.transpose(1,0,2)).sub(b_.transpose(1,0,2)).transpose(1,0,2)
 
     if 'S1' in sd.axes[2]:
       sd = sd.drop('S1', axis=2)
