@@ -19,7 +19,7 @@ Usage
 As well as being a library, pyNEX comes with two command line utilities.
 
 `pynex` takes a RINEX file and outputs an HDF5 file that can be read by pandas.
-The HDF5 file will have a table appanded to it containing the observations
+The HDF5 file will have a table appended to it containing the observations
 using the marker name as the table name.
 
     $ pynex --help
