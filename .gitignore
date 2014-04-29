@@ -1,0 +1,8 @@
+*.pyc
+distribute*
+.DS_Store
+pynex.egg*
+distribute-*
+RELEASE-VERSION
+build/
+dist/
