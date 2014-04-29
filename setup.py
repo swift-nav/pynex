@@ -6,7 +6,7 @@ setup_args = dict(
   name = 'pynex',
   version = get_git_version(),
   description = 'Python RINEX utilities',
-  license = 'GPLv3',
+  license = 'LGPLv3',
   url = 'http://www.swift-nav.com',
 
   author = 'Swift Navigation Inc.',
