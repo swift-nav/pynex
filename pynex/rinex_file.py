@@ -173,7 +173,7 @@ class RINEXFile:
                 minor_axis=self.obs_types
             ).dropna(axis=0, how='all').dropna(axis=2, how='all'))
 
-        self.data = pandas.concat(obs_data_chunks)
+        self.data = pandas.concat(obs_data_chunks, axis=1)
 
 
 def main():
