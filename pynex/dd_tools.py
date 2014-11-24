@@ -43,7 +43,9 @@ def propagate(a, b):
 
 def sds(a, b):
     a_, b_ = a, b #propagate(a, b)
-    sd = (a_.transpose(1,0,2)).sub(b_.transpose(1,0,2)).transpose(1,0,2)
+    sd = (a_.transpose(1,0,2).groupby(lambda x: x, axis="items").first()).sub(
+          b_.transpose(1,0,2).groupby(lambda x: x, axis="items").first()
+          ).transpose(1,0,2)
 
     if 'S1' in sd.axes[2]:
       sd = sd.drop('S1', axis=2)
@@ -84,7 +86,7 @@ def main():
 
     if args.reference is None:
       mean_snrs = h5[args.rover_name].ix[:, :, 'S1'].mean(axis=0)
-      ref = mean_snrs.index[mean_snrs.argmax()]
+      ref = mean_snrs.argmax()
     else:
       ref = args.reference
 
