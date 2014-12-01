@@ -11,8 +11,23 @@
 
 #TODO make this use the rinex ephemeris format, instead of my custom junk
 
+import datetime
 import pandas as pd
 import numpy as np
+
+def _parse_epoch(t):
+    year = int(t[1:3])
+    if year >= 80:
+        year += 1900
+    else:
+        year += 2000
+    month = int(t[4:6])
+    day = int(t[7:9])
+    hour = int(t[10:12])
+    minute = int(t[13:15])
+    second = int(t[15:18])
+    microsecond = int(t[19:25]) # Discard the least sig. fig. (use microseconds only).
+    return datetime.datetime(year, month, day, hour, minute, second, microsecond)
 
 def ephemeris_file(filename):
     # TODO parse RINEX instead
@@ -23,7 +38,7 @@ def ephemeris_file(filename):
     fields = np.array(map(lambda x: x.split(','),lines[1:]))
     times = fields[:,0]
     fields = np.array(fields[:,1:], dtype='double')
-    return pd.DataFrame(fields,index=times, columns=header)
+    return pd.DataFrame(fields,index=map(_parse_epoch,times), columns=header)
 
 def main():
     import sys
