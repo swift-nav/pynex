@@ -19,6 +19,7 @@ setup_args = dict(
     'console_scripts': [
       'pynex = pynex.rinex_file:main',
       'ddtool = pynex.dd_tools:main',
+      'ephtool = pynex.eph_tool:main',
     ]
   },
 
