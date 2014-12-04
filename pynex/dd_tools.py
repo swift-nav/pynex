@@ -43,13 +43,16 @@ def propagate(a, b):
 
 def sds(a, b):
     a_, b_ = a, b #propagate(a, b)
-    sd = a_.transpose(1,0,2).sub(b_.transpose(1,0,2)).transpose(1,0,2)
-
-    if 'S1' in sd.axes[2]:
-      sd = sd.drop('S1', axis=2)
-    if 'S2' in sd.axes[2]:
-      sd = sd.drop('S2', axis=2)
-
+    sd = a_.transpose(1,0,2).sub(b_.transpose(1,0,2)).transpose(2,1,0)
+    if 'S1' in sd.axes[0]:
+      sd = sd.drop('S1', axis=0)
+      sd['S1_1'] = a_.transpose(2,0,1)['S1']
+      sd['S1_2'] = b_.transpose(2,0,1)['S1']
+    if 'S2' in sd.axes[0]:
+      sd = sd.drop('S2', axis=0)
+      sd['S2_1'] = a_.transpose(2,0,1)['S2']
+      sd['S2_2'] = b_.transpose(2,0,1)['S2']      
+    sd = sd.transpose(1,2,0)
     return sd.dropna(how='all', axis=1).dropna(how='all', axis=0)
 
 def dds(a, b, ref, zero_ambs=False):
