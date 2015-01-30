@@ -52,6 +52,32 @@ def sds(a, b):
 
     return sd.dropna(how='all', axis=1).dropna(how='all', axis=0)
 
+def sds_with_lock_counts(a, b):
+    """
+    Turn two panels of observations into a single differenced panel
+    that includes lock counters.
+
+    Paremeters
+    ----------
+    a : Panel
+      An Panel of observations from one receiver.
+    b : Panel
+      An Panel of observations from another receiver.
+
+    Returns
+    -------
+    Panel
+      A panel of a's observations minus b's observations with a and b's lock
+      counters and snrs.
+    """
+    a_, b_ = a, b #propagate(a, b)
+    j = a.transpose(1,0,2).join(b.transpose(1,0,2), lsuffix='a').transpose(1,0,2)
+    sd = sds(a, b)
+    return sd.ix[:, [item for item in sd.major_axis if (item != 'lock' and item != 'snr')], :]. \
+          transpose(1,0,2).join(
+              j.ix[:, ['lock', 'lock2', 'snr', 'snr2'], :].transpose(1,0,2)
+          ).transpose(1,0,2)
+
 def dds(a, b, ref, zero_ambs=False):
     sd = sds(a, b)
     dd = sd.sub(sd.ix[ref, :, :], axis=0)
