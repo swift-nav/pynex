@@ -10,6 +10,7 @@
 # WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 
 import pandas
+import numpy as np
 
 def epochpairs(a, b):
     ia = a.data.items
@@ -45,12 +46,37 @@ def sds(a, b):
     a_, b_ = a, b #propagate(a, b)
     sd = a_.transpose(1,0,2).sub(b_.transpose(1,0,2)).transpose(1,0,2)
 
+    if 'snr' in sd.axes[1]:
+      j = a_.transpose(1,0,2).join(b_.transpose(1,0,2), lsuffix='1', rsuffix='2').transpose(1,0,2)
+      sd.ix[:,'snr', :] = j.apply(lambda x: np.min([x['snr1'], x['snr2']])) #the numpy min takes nan -> nan
     if 'S1' in sd.axes[2]:
       sd = sd.drop('S1', axis=2)
     if 'S2' in sd.axes[2]:
       sd = sd.drop('S2', axis=2)
 
     return sd.dropna(how='all', axis=1).dropna(how='all', axis=0)
+
+def field_is_nan(field1, field2, x):
+    """
+    Makes one field NaN if another is.
+
+    Paremeters
+    ----------
+    field1 : str
+      The field to check for NaN.
+    field2 : str
+      The field to replace
+    x
+      The object whose fields to check and replace
+
+    Returns
+    -------
+    numeric
+      x[field2] if x[field1] isn't NaN. Nan if it is.
+    """
+    if np.isnan(x[field1]):
+        return np.nan
+    return x[field2]
 
 def sds_with_lock_counts(a, b):
     """
@@ -71,12 +97,13 @@ def sds_with_lock_counts(a, b):
       counters and snrs.
     """
     a_, b_ = a, b #propagate(a, b)
-    j = a.transpose(1,0,2).join(b.transpose(1,0,2), lsuffix='1', rsuffix='2').transpose(1,0,2)
-    j.ix[:,'snr', :] = j.ix[:,'snr',:] = j.apply(lambda x: min(x['snr1'], x['snr2']))
+    j = a_.transpose(1,0,2).join(b_.transpose(1,0,2), lsuffix='1', rsuffix='2').transpose(1,0,2)
+    j.ix[:,'lock2',:] = j.apply(lambda x: field_is_nan('lock1', 'lock2', x))
+    j.ix[:,'lock1',:] = j.apply(lambda x: field_is_nan('lock2', 'lock1', x))
     sd = sds(a, b)
-    return sd.ix[:, [item for item in sd.major_axis if (item != 'lock' and item != 'snr')], :]. \
+    return sd.ix[:, [item for item in sd.major_axis if item != 'lock'], :]. \
           transpose(1,0,2).join(
-              j.ix[:, ['lock1', 'lock2', 'snr'], :].transpose(1,0,2)
+              j.ix[:, ['lock1', 'lock2'], :].transpose(1,0,2)
           ).transpose(1,0,2)
 
 def dds(a, b, ref, zero_ambs=False):
