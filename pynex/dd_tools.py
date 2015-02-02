@@ -71,11 +71,12 @@ def sds_with_lock_counts(a, b):
       counters and snrs.
     """
     a_, b_ = a, b #propagate(a, b)
-    j = a.transpose(1,0,2).join(b.transpose(1,0,2), lsuffix='a').transpose(1,0,2)
+    j = a.transpose(1,0,2).join(b.transpose(1,0,2), lsuffix='1', rsuffix='2').transpose(1,0,2)
+    j.ix[:,'snr', :] = j.ix[:,'snr',:] = j.apply(lambda x: min(x['snr1'], x['snr2']))
     sd = sds(a, b)
     return sd.ix[:, [item for item in sd.major_axis if (item != 'lock' and item != 'snr')], :]. \
           transpose(1,0,2).join(
-              j.ix[:, ['lock', 'lock2', 'snr', 'snr2'], :].transpose(1,0,2)
+              j.ix[:, ['lock1', 'lock2', 'snr'], :].transpose(1,0,2)
           ).transpose(1,0,2)
 
 def dds(a, b, ref, zero_ambs=False):
