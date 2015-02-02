@@ -56,28 +56,6 @@ def sds(a, b):
 
     return sd.dropna(how='all', axis=1).dropna(how='all', axis=0)
 
-def field_is_nan(field1, field2, x):
-    """
-    Makes one field NaN if another is.
-
-    Paremeters
-    ----------
-    field1 : str
-      The field to check for NaN.
-    field2 : str
-      The field to replace
-    x
-      The object whose fields to check and replace
-
-    Returns
-    -------
-    numeric
-      x[field2] if x[field1] isn't NaN. Nan if it is.
-    """
-    if np.isnan(x[field1]):
-        return np.nan
-    return x[field2]
-
 def sds_with_lock_counts(a, b):
     """
     Turn two panels of observations into a single differenced panel
@@ -98,8 +76,6 @@ def sds_with_lock_counts(a, b):
     """
     a_, b_ = a, b #propagate(a, b)
     j = a_.transpose(1,0,2).join(b_.transpose(1,0,2), lsuffix='1', rsuffix='2').transpose(1,0,2)
-    j.ix[:,'lock2',:] = j.apply(lambda x: field_is_nan('lock1', 'lock2', x))
-    j.ix[:,'lock1',:] = j.apply(lambda x: field_is_nan('lock2', 'lock1', x))
     sd = sds(a, b)
     return sd.ix[:, [item for item in sd.major_axis if item != 'lock'], :]. \
           transpose(1,0,2).join(
