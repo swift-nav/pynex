@@ -48,7 +48,7 @@ def sds(a, b):
 
     if 'snr' in sd.axes[1]:
       j = a_.transpose(1,0,2).join(b_.transpose(1,0,2), lsuffix='1', rsuffix='2').transpose(1,0,2)
-      sd.ix[:,'snr', :] = j.apply(lambda x: np.min([x['snr1'], x['snr2']])) #the numpy min takes nan -> nan
+      sd.ix[:,'snr', :] = j.ix[:,['snr1','snr2'],:].min(axis=1,skipna=False)
     if 'S1' in sd.axes[2]:
       sd = sd.drop('S1', axis=2)
     if 'S2' in sd.axes[2]:
