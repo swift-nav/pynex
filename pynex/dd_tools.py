@@ -10,6 +10,7 @@
 # WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 
 import pandas
+import numpy as np
 
 def epochpairs(a, b):
     ia = a.data.items
@@ -45,12 +46,41 @@ def sds(a, b):
     a_, b_ = a, b #propagate(a, b)
     sd = a_.transpose(1,0,2).sub(b_.transpose(1,0,2)).transpose(1,0,2)
 
+    if 'snr' in sd.axes[1]:
+      j = a_.transpose(1,0,2).join(b_.transpose(1,0,2), lsuffix='1', rsuffix='2').transpose(1,0,2)
+      sd.ix[:,'snr', :] = j.ix[:,['snr1','snr2'],:].min(axis=1,skipna=False)
     if 'S1' in sd.axes[2]:
       sd = sd.drop('S1', axis=2)
     if 'S2' in sd.axes[2]:
       sd = sd.drop('S2', axis=2)
 
     return sd.dropna(how='all', axis=1).dropna(how='all', axis=0)
+
+def sds_with_lock_counts(a, b):
+    """
+    Turn two panels of observations into a single differenced panel
+    that includes lock counters.
+
+    Paremeters
+    ----------
+    a : Panel
+      An Panel of observations from one receiver.
+    b : Panel
+      An Panel of observations from another receiver.
+
+    Returns
+    -------
+    Panel
+      A panel of a's observations minus b's observations with a and b's lock
+      counters and snrs.
+    """
+    a_, b_ = a, b #propagate(a, b)
+    j = a_.transpose(1,0,2).join(b_.transpose(1,0,2), lsuffix='1', rsuffix='2').transpose(1,0,2)
+    sd = sds(a, b)
+    return sd.ix[:, [item for item in sd.major_axis if item != 'lock'], :]. \
+          transpose(1,0,2).join(
+              j.ix[:, ['lock1', 'lock2'], :].transpose(1,0,2)
+          ).transpose(1,0,2)
 
 def dds(a, b, ref, zero_ambs=False):
     sd = sds(a, b)
