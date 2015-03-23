@@ -7,21 +7,27 @@ from matplotlib.pyplot import figure,show
 
 def demorinex(rinexfn):
     #switchyard based on filename extension
-    name,ext = splitext(rinexfn)[1]
+    name,ext = splitext(rinexfn)
     if ext[-1] == 'o':
         f = RINEXFile(rinexfn)
-        f.data.to_pickle(name + '.pickle')
-        return f
+        f.save_pickle(name + '.pickle')
+        f.save_hdf5(name+'.h5') #this can crash some Python with incompatible PyTables/Pandas/HDF5 versions
+        return f.data
     elif ext in ('.pkl','.pickle'):
         return read_pickle(expanduser(rinexfn))
+    elif ext in ('.h5','.hdf5'):
+        print('not implemented yet')
+        return None
 
 def plotdata(data):
+    if data is None: return
+
     sc = ('L1','L2')
     startdate = data.major_axis[0].strftime('%Y-%m-%d')
     for s in sc:
         ax = figure().gca()
         for i in data.items:
-            ax.plot(data[i].index,data[i][s])
+            ax.plot(data[i].index, data[i][s], label='i')
 
         ax.set_title(startdate + ' SV {:s} - {:s}: {:s}'.format(data.items[0], data.items[-1], s))
 

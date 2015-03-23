@@ -11,6 +11,7 @@
 
 import pandas
 import numpy as np
+from datetime import timedelta
 
 def epochpairs(a, b):
     ia = a.data.items
@@ -34,7 +35,7 @@ def propagate(a, b):
 
     a_ = a.data.ix[ia,:,:]
     b_ = b.data.ix[ib,:,:]
-    dt = array([(ta - tb).total_seconds() for ta, tb in pairs])
+    dt = np.array([(ta - tb).total_seconds() for ta, tb in pairs])
     b_.items = ia
 
     b_.ix[:, :, 'C1'] -= b_.ix[:, :, 'D1'].mul(dt*0.190293673) # Multiply by wavelength to convert to distance
@@ -93,7 +94,7 @@ def dds(a, b, ref, zero_ambs=False):
 
 
 def main():
-    import sys
+    #import sys
     import argparse
 
     parser = argparse.ArgumentParser()

@@ -33,10 +33,9 @@ class RINEXFile:
           self._read_header(f)
           self._read_data(f)
 
-    def save_hdf5(self, filename, append=True): #this can hard crash Python on some setups
-        h5 = pandas.HDFStore(expanduser(filename), 'a' if append else 'w')
-        h5[self.marker_name] = self.data
-        h5.close()
+    def save_hdf5(self, filename, append=True): #this can hard crash Python on some setups due to HDF5 version conflict
+        with pandas.HDFStore(expanduser(filename), 'a' if append else 'w') as h:
+            h[self.marker_name] = self.data
 
     def save_pickle(self,filename): #last resort for those having HDF5 trouble
         fp = splitext(expanduser(filename))
