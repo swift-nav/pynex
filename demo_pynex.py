@@ -7,9 +7,10 @@ from matplotlib.pyplot import figure,show
 
 def demorinex(rinexfn):
     #switchyard based on filename extension
-    ext = splitext(rinexfn)[1]
+    name,ext = splitext(rinexfn)[1]
     if ext[-1] == 'o':
         f = RINEXFile(rinexfn)
+        f.data.to_pickle(name + '.pickle')
         return f
     elif ext in ('.pkl','.pickle'):
         return read_pickle(expanduser(rinexfn))
