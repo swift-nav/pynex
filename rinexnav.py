@@ -47,18 +47,18 @@ def readRINEXnav(fn):
                 raw += f.readline()[startcol:n*numdat+startcol]
             raws.append([raw[i:i+n].replace('D','E') for i in range(0,7*n*numdat+n,n)])
 
-        darr = np.asarray(raws).astype(np.float64)
+    darr = np.asarray(raws).astype(np.float64)
 
-        nav= DataFrame(data = np.hstack((np.asarray(sv).astype(int)[:,None], darr)),
-                         index=epoch,
-                         columns=['sv','SVclockBias','SVclockDrift','SVclockDriftRate','IODE',
-                                 'Crs','DeltaN','M0','Cuc','Eccentricity','Cus',
-                                  'sqrtA','TimeEph','Cic','OMEGA','CIS','Io','Crc',
-                                  'omega','OMEGA DOT','IDOT','CodesL2','GPSWeek',
-                                  'L2Pflag','SVacc','SVhealth','TGD','IODC',
-                                  'TransTime','FitIntvl'])
+    nav= DataFrame(data = np.hstack((np.asarray(sv).astype(int)[:,None], darr)),
+                     index=epoch,
+                     columns=['sv','SVclockBias','SVclockDrift','SVclockDriftRate','IODE',
+                             'Crs','DeltaN','M0','Cuc','Eccentricity','Cus',
+                              'sqrtA','TimeEph','Cic','OMEGA','CIS','Io','Crc',
+                              'omega','OMEGA DOT','IDOT','CodesL2','GPSWeek',
+                              'L2Pflag','SVacc','SVhealth','TGD','IODC',
+                              'TransTime','FitIntvl'])
 
-        return nav
+    return nav
 
 if __name__ == '__main__':
     from sys import argv
