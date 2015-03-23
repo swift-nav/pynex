@@ -119,27 +119,21 @@ def main():
       ref = args.reference
 
     if args.verbose:
-      print "Using reference:", ref
+      print("Using reference:", ref)
 
     sd_table_name = 'sd_%s_%s' % (args.rover_name, args.base_name)
     if args.verbose:
-      print
-      print "Writing table '%s' of single differences:" % sd_table_name
-      print
+      print("\nWriting table '%s' of single differences:\n" % sd_table_name)
     h5[sd_table_name] = sds(h5[args.rover_name], h5[args.base_name])
     if args.verbose:
-      print str(h5[sd_table_name])
-      print
+      print(str(h5[sd_table_name]))
 
     dd_table_name = 'dd_%s_%s' % (args.rover_name, args.base_name)
     if args.verbose:
-      print
-      print "Writing table '%s' of double differences:" % dd_table_name
-      print
+      print("\nWriting table '%s' of double differences:\n" % dd_table_name)
     h5[dd_table_name] = dds(h5[args.rover_name], h5[args.base_name], ref)
     if args.verbose:
-      print h5[dd_table_name]
-      print
+      print(h5[dd_table_name])
 
     h5.close()
 
