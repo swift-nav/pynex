@@ -1,0 +1,10 @@
+#for conda
+pytables>=3.1
+#for pip
+#tables>=3.1
+numpy>=1.6
+pandas>=0.15
+matplotlib>=1.4
+
+#optional
+ipython>=2
