@@ -15,7 +15,7 @@ Alternatively, if you are developing pyNEX and want to install a link to your wo
 
 Interactive Usage
 -----------------
-The ``` demorinex.py ``` script demonstrates usage from IPython
+The ``` demo_pynex.py ``` script demonstrates usage from IPython
 
 Upon getting the pandas data back, you can use methods .save_hdf5() or .save_pickle() 
 if HDF5 isn't working on your system.
