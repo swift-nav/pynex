@@ -14,15 +14,11 @@ import pandas
 import numpy as np
 from os.path import expanduser, splitext
 
-def floatornan(x): #this is up to 1000x faster than original code
-    return np.float64(x) if x.strip(None) else np.nan
-#    if x == '' or x[-1] == ' ':
-#        return np.NaN
-#    else:
-#        return np.float64(x)
+def floatornan(x): #this is up to 2000x faster than original code
+    return np.float64(x) if x and x.strip(None) else np.nan
 
-def digitorzero(x): #this is up to 3000x faster than original code
-    return int(x) if x.strip(None) else 0
+def digitorzero(x): #this is up to 6000x faster than original code
+    return int(x) if x and x.strip(None) else 0
 
 def padline(l, n=16):
     x = len(l)
