@@ -22,14 +22,19 @@ def demorinex(rinexfn):
 def plotdata(data):
     if data is None: return
 
-    sc = ('L1','L2')
+    sc = ('L1','L2','C1')
+    yl = ('carrier phase (cycles)','carrier phase (cycles)','pseudorange (meters)')
     startdate = data.major_axis[0].strftime('%Y-%m-%d')
-    for s in sc:
+    for s,l in zip(sc,yl):
         ax = figure().gca()
         for i in data.items:
-            ax.plot(data[i].index, data[i][s], label='i')
-
+            try:
+                ax.plot(data[i].index, data[i][s], label=i)
+            except IndexError:
+                break
         ax.set_title(startdate + ' SV {:s} - {:s}: {:s}'.format(data.items[0], data.items[-1], s))
+        ax.set_xlabel('time')
+        ax.set_ylabel(l)
 
     show()
 

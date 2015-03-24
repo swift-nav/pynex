@@ -13,19 +13,20 @@ import datetime
 import pandas
 import numpy as np
 from os.path import expanduser, splitext
-
-def floatornan(x): #this is up to 2000x faster than original code
-    return np.float64(x) if x and x.strip(None) else np.nan
-
-def digitorzero(x): #this is up to 6000x faster than original code
-    return int(x) if x and x.strip(None) else 0
+import sys
+if sys.version_info<(3,):
+    py3 = False
+    from StringIO import StringIO
+else:
+    from io import BytesIO
+    py3 = True
 
 def padline(l, n=16):
     x = len(l)
     x_ = n * ((x + n - 1) // n)
     return l + ' ' * (x_ - x)
 
-TOTAL_SATS = 32
+TOTAL_SATS = 32 #FIXME this will need to change for including more than just "G" systems!
 
 class RINEXFile:
     def __init__(self, filename):
@@ -124,15 +125,20 @@ class RINEXFile:
         lli = np.zeros((TOTAL_SATS, len(self.obs_types)), dtype=np.uint8)
         signal_strength = np.zeros((TOTAL_SATS, len(self.obs_types)), dtype=np.uint8)
 
-        for i in range(n_sat):
-            # Join together observations for a single satellite if split across lines.
-            obs_line = ''.join(padline(f.readline()[:-1], 16) for _ in range((len(self.obs_types) + 4) // 5))
+        nline = n_sat*len(self.obs_types)//5
+        obs_txt = ''.join(f.readline() for _ in range(nline))
 
-            for j in range(len(self.obs_types)):
-                obs_record = obs_line[16*j:16*(j+1)]
-                obs[sat_map[i], j] = floatornan(obs_record[:14])
-                lli[sat_map[i], j] = digitorzero(obs_record[14:15])
-                signal_strength[sat_map[i], j] = digitorzero(obs_record[15:16])
+        smtake = sat_map>=0
+        sm = sat_map[smtake].astype(int) #FIXME _read_data_chunk discards all non-"G" systems e.g. GLONASS!
+        if py3:
+            strio = BytesIO(obs_txt.encode())
+        else:
+            strio = StringIO(obs_txt)
+        x = np.genfromtxt(strio, delimiter=(14,1,1, 14,1,1, 14,1,1, 14,1,1, 14,1,1)).reshape((n_sat,-1),order='C')
+
+        obs[sm,:]             = x[smtake,::3]
+        lli[sm,:]             = x[smtake,1::3].astype(np.uint8)
+        signal_strength[sm,:] = x[smtake,2::3].astype(np.uint8)
 
         return obs, lli, signal_strength
 
