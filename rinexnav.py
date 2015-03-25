@@ -2,13 +2,20 @@
 Reads RINEX 2.1 NAV files
 by Michael Hirsch
 bostonmicrowave.com
-GPLv3+
+LGPLv3+
 """
 from __future__ import division
 from os.path import expanduser
 import numpy as np
 from datetime import datetime
-from pandas import DataFrame
+from pandas import DataFrame,Panel
+import sys
+if sys.version_info<(3,):
+    py3 = False
+    from StringIO import StringIO
+else:
+    from io import BytesIO
+    py3 = True
 
 def readRINEXnav(fn):
     """
@@ -17,20 +24,19 @@ def readRINEXnav(fn):
     and asarray().reshape() to the final result, but I did it frame by frame.
     http://gage14.upc.es/gLAB/HTML/GPS_Navigation_Rinex_v2.11.html
     """
-    n = 19 #num of characters per number
     startcol = 3 #column where numerical data starts
-    numdat = 4 #number of data elements per line
+    nfloat=19 #number of text elements per float data number
     yb = 2000 # TODO I'm assuming it's the 21st century!
+    nline=7 #number of lines per record
+    nsat = 32 #TODO account for more than just "G"?
 
     with open(expanduser(fn),'r') as f:
         #find end of header, which has non-constant length
         while True:
             if 'END OF HEADER' in f.readline(): break
         #handle frame by frame
-        sv = []; epoch=[]; raws=[]
-        while True:
-            headln = f.readline()
-            if not headln: break # eof
+        sv = []; epoch=[]; raws=''
+        for headln in f:
             #handle the header
             sv.append(headln[:2])
             epoch.append(datetime(year =yb+int(headln[2:5]),
@@ -41,22 +47,24 @@ def readRINEXnav(fn):
                                   second  =int(headln[17:20]),
                                   microsecond=int(headln[21])*100000))
             #now get the data
-            raw = headln[22:-1]  #don't let the line return through!
+            raw = (headln[22:-1] +
+                    ''.join(f.readline()[startcol:-1] for _ in range(nline)))
+            raws += raw + '\n'
 
-            for i in range(7):
-                raw += f.readline()[startcol:n*numdat+startcol]
-            raws.append([raw[i:i+n].replace('D','E') for i in range(0,7*n*numdat+n,n)])
+        raws = raws.replace('D','E')
 
-    darr = np.asarray(raws).astype(np.float64)
+    if py3:
+        strio = BytesIO(raws.encode())
+    else:
+        strio = StringIO(raws)
+    darr = np.genfromtxt(strio,delimiter=nfloat)
 
-    nav= DataFrame(data = np.hstack((np.asarray(sv).astype(int)[:,None], darr)),
-                     index=epoch,
-                     columns=['sv','SVclockBias','SVclockDrift','SVclockDriftRate','IODE',
-                             'Crs','DeltaN','M0','Cuc','Eccentricity','Cus',
-                              'sqrtA','TimeEph','Cic','OMEGA','CIS','Io','Crc',
-                              'omega','OMEGA DOT','IDOT','CodesL2','GPSWeek',
-                              'L2Pflag','SVacc','SVhealth','TGD','IODC',
-                              'TransTime','FitIntvl'])
+    nav= DataFrame(np.hstack((np.asarray(sv,int)[:,None],darr)), epoch,
+               ['sv','SVclockBias','SVclockDrift','SVclockDriftRate','IODE',
+                'Crs','DeltaN','M0','Cuc','Eccentricity','Cus','sqrtA','TimeEph',
+                'Cic','OMEGA','CIS','Io','Crc','omega','OMEGA DOT','IDOT',
+                'CodesL2','GPSWeek','L2Pflag','SVacc','SVhealth','TGD','IODC',
+                'TransTime','FitIntvl'])
 
     return nav
 
