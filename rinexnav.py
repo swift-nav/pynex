@@ -36,7 +36,9 @@ def readRINEXnav(fn):
             if 'END OF HEADER' in f.readline(): break
         #handle frame by frame
         sv = []; epoch=[]; raws=''
-        for headln in f:
+        while True:
+            headln = f.readline()
+            if not headln: break
             #handle the header
             sv.append(headln[:2])
             epoch.append(datetime(year =yb+int(headln[2:5]),
@@ -46,9 +48,13 @@ def readRINEXnav(fn):
                                   minute  =int(headln[14:17]),
                                   second  =int(headln[17:20]),
                                   microsecond=int(headln[21])*100000))
-            #now get the data
-            raw = (headln[22:-1] +
-                    ''.join(f.readline()[startcol:-1] for _ in range(nline)))
+            """
+            now get the data.
+            Use rstrip() to chomp newlines consistently on Windows and Python 2.7/3.4
+            Specifically [:-1] doesn't work consistently as .rstrip() does here.
+            """
+            raw = (headln[22:].rstrip() +
+                    ''.join(f.readline()[startcol:].rstrip() for _ in range(nline)))
             raws += raw + '\n'
 
     raws = raws.replace('D','E')
@@ -75,3 +81,4 @@ if __name__ == '__main__':
     p = p.parse_args()
 
     nav = readRINEXnav(p.navfn)
+    print(nav.head())
