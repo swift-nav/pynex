@@ -51,7 +51,7 @@ def readRINEXnav(fn):
                     ''.join(f.readline()[startcol:-1] for _ in range(nline)))
             raws += raw + '\n'
 
-        raws = raws.replace('D','E')
+    raws = raws.replace('D','E')
 
     if py3:
         strio = BytesIO(raws.encode())
