@@ -69,6 +69,9 @@ def readRINEXnav(fn):
     return nav
 
 if __name__ == '__main__':
-    from sys import argv
+    from argparse import ArgumentParser
+    p = ArgumentParser(description='example of reading a RINEX 2 Navigation file')
+    p.add_argument('navfn',help='path to RINEX Navigation file',type=str)
+    p = p.parse_args()
 
-    nav = readRINEXnav(argv[1])
+    nav = readRINEXnav(p.navfn)
