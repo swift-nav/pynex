@@ -28,11 +28,15 @@ def padline(l, n=16):
 
 TOTAL_SATS = 32 #FIXME this will need to change for including more than just "G" systems!
 
+
 class RINEXFile:
-    def __init__(self, filename):
+    def __init__(self, filename,maxchunk=None):
+        self.maxchunk = maxchunk  # if you have a gigantic gigabyte size file, 
+         #maybe you just want to try reading the first part of it to see what's in there
+        
         with open(expanduser(filename), 'r') as f:
-          self._read_header(f)
-          self._read_data(f)
+            self._read_header(f)
+            self._read_data(f)
 
     def save_hdf5(self, filename, append=True): #this can hard crash Python on some setups due to HDF5 version conflict
         with pandas.HDFStore(expanduser(filename), 'a' if append else 'w') as h:
@@ -163,6 +167,7 @@ class RINEXFile:
                     sat_map[n] = int(sat[1:]) - 1
             obss[i], llis[i], signal_strengths[i] = self._read_obs(f, len(sats), sat_map)
             i += 1
+            #if not i % 1000: print('chunk {:0.1f}'.format(i/CHUNK_SIZE*100))
             if i >= CHUNK_SIZE:
                 break
 
@@ -176,6 +181,7 @@ class RINEXFile:
 
             if obss.shape[0] == 0:
                 break
+        
 
             obs_data_chunks.append(pandas.Panel(
                 np.rollaxis(obss, 1, 0),
@@ -183,6 +189,11 @@ class RINEXFile:
                 major_axis=epochs,
                 minor_axis=self.obs_types
             ).dropna(axis=0, how='all').dropna(axis=2, how='all'))
+            
+            nchunk = len(obs_data_chunks)
+            
+            print('{} chunks collected.'.format(nchunk))
+            if self.maxchunk and nchunk>=self.maxchunk: break
 
         self.data = pandas.concat(obs_data_chunks, axis=1)
 
