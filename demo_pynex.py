@@ -4,7 +4,7 @@ from pynex.rinex_file import RINEXFile
 from os.path import expanduser,splitext
 from pandas.io.pickle import read_pickle
 from matplotlib.pyplot import figure,show
-from numpy import empty
+from time import time
 
 def demorinex(obsfn,maxchunk=None):
     #switchyard based on filename extension
@@ -53,7 +53,9 @@ def estimateTEC(data):
     f1 = 1575.42e6 #[hz]
     f2 = 1227.60e6 #[hz]
     k = 80.62 #[m^3/s^2]
+    tic = time()
     data.ix[:,:,'TECslp'] = 2*(f1*f2)**2 / (k*(f1**2-f2**2)) * (data.ix[:,:,'P2'] -data.ix[:,:,'P1'])
+    print('computed TEC for {} time steps in {} milliseconds.'.format(data.shape[1],(time()-tic)*1000))    
     return data
 
 if __name__ == '__main__':
