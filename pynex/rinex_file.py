@@ -108,7 +108,7 @@ class RINEXFile:
                                   hour = int(epoch_hdr[10:12]),
                                   minute=int(epoch_hdr[13:15]),
                                   second=int(epoch_hdr[15:18]),
-                                  microsecond=int(epoch_hdr[19:25])  # Discard the least sig. fig. (use microseconds only).
+                                  microsecond=int(epoch_hdr[19:25])*100000  # Discard the least sig. fig. (use microseconds only).
                                   )
 
         flag = int(epoch_hdr[28])
