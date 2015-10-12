@@ -8,18 +8,13 @@
 # THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
 # EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
-
+from __future__ import division,absolute_import
 import datetime
 import pandas
 import numpy as np
 from os.path import expanduser, splitext
 import sys
-if sys.version_info<(3,):
-    py3 = False
-    from StringIO import StringIO
-else:
-    from io import BytesIO
-    py3 = True
+from six import BytesIO,PY3
 
 def padline(l, n=16):
     x = len(l)
@@ -31,9 +26,9 @@ TOTAL_SATS = 32 #FIXME this will need to change for including more than just "G"
 
 class RINEXFile:
     def __init__(self, filename,maxchunk=None):
-        self.maxchunk = maxchunk  # if you have a gigantic gigabyte size file, 
+        self.maxchunk = maxchunk  # if you have a gigantic gigabyte size file,
          #maybe you just want to try reading the first part of it to see what's in there
-        
+
         with open(expanduser(filename), 'r') as f:
             self._read_header(f)
             self._read_data(f)
@@ -134,10 +129,10 @@ class RINEXFile:
 
         smtake = sat_map>=0
         sm = sat_map[smtake].astype(int) #FIXME _read_data_chunk discards all non-"G" systems e.g. GLONASS!
-        if py3:
+        if PY3:
             strio = BytesIO(obs_txt.encode())
         else:
-            strio = StringIO(obs_txt)
+            strio = BytesIO(obs_txt)
         x = np.genfromtxt(strio, delimiter=(14,1,1, 14,1,1, 14,1,1, 14,1,1, 14,1,1)).reshape((n_sat,-1),order='C')
 
         obs[sm,:]             = x[smtake,::3]
@@ -181,7 +176,7 @@ class RINEXFile:
 
             if obss.shape[0] == 0:
                 break
-        
+
 
             obs_data_chunks.append(pandas.Panel(
                 np.rollaxis(obss, 1, 0),
@@ -189,9 +184,9 @@ class RINEXFile:
                 major_axis=epochs,
                 minor_axis=self.obs_types
             ).dropna(axis=0, how='all').dropna(axis=2, how='all'))
-            
+
             nchunk = len(obs_data_chunks)
-            
+
             print('{} chunks collected.'.format(nchunk))
             if self.maxchunk and nchunk>=self.maxchunk: break
 
