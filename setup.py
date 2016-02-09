@@ -1,11 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from version import get_git_version
+
 try:
   import sys
   reload(sys).setdefaultencoding("UTF-8")
 except:
   pass
+
+try:
+  from subprocess import STDOUT, check_call
+  
+  #setuptools installation for numpy fails
+  check_call(['pip', 'install', 'numpy']) 
+except:
+  print 'numpy install failed.'
+  sys.exit(1)
 
 try:
   from setuptools import setup, find_packages
@@ -15,9 +26,10 @@ except ImportError:
 
 from version import get_git_version
 
-INSTALL_REQUIRES = ['pandas']
+INSTALL_REQUIRES = ['pandas', 'tables']
 
 setup(name='pynex',
+      version = get_git_version(),
       description='Python RINEX utilities',
       license='GPLv3',
       url='http://swiftnav.com',
@@ -36,3 +48,4 @@ setup(name='pynex',
       use_2to3=False,
       zip_safe=False
 )
+
