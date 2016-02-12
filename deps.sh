@@ -8,17 +8,15 @@ function install_deps_debian () {
     sudo apt-get -y install libhdf5-serial-dev \
          python-pip \
          python-dev
-    sudo python setup.py install
 }
 
 function install_deps_osx () {
-    if [[ ! -x /usr/local/bin/brew ]]; then
-        echo "You're missing Homebrew!"
-        exit 1
-    fi
+    if [[ ! -x /usr/local/bin/brew ]]; then
+        echo "You're missing homebrew"
+        exit 1
+    fi
     brew install homebrew/science/hdf5
     sudo easy_install pip
-    sudo python setup.py install
 }
 
 if [[ "$OSTYPE" == "linux-"* ]]; then
