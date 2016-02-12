@@ -10,15 +10,6 @@ except:
   pass
 
 try:
-  from subprocess import STDOUT, check_call
-  
-  #setuptools installation for numpy fails
-  check_call(['pip', 'install', 'numpy']) 
-except:
-  print 'numpy install failed.'
-  sys.exit(1)
-
-try:
   from setuptools import setup, find_packages
 except ImportError:
   print 'Please install or upgrade setuptools or pip to continue.'
