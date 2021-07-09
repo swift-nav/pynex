@@ -1,4 +1,4 @@
-pyNEX
+pyNEX (ARCHIVED)
 =====
 
 Python RINEX utilities
