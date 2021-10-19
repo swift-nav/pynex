@@ -11,6 +11,7 @@
 
 import pandas
 import numpy as np
+from datetime import timedelta
 
 def epochpairs(a, b):
     ia = a.data.items
@@ -34,7 +35,7 @@ def propagate(a, b):
 
     a_ = a.data.ix[ia,:,:]
     b_ = b.data.ix[ib,:,:]
-    dt = array([(ta - tb).total_seconds() for ta, tb in pairs])
+    dt = np.array([(ta - tb).total_seconds() for ta, tb in pairs])
     b_.items = ia
 
     b_.ix[:, :, 'C1'] -= b_.ix[:, :, 'D1'].mul(dt*0.190293673) # Multiply by wavelength to convert to distance
@@ -93,7 +94,7 @@ def dds(a, b, ref, zero_ambs=False):
 
 
 def main():
-    import sys
+    #import sys
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -119,27 +120,21 @@ def main():
       ref = args.reference
 
     if args.verbose:
-      print "Using reference:", ref
+      print("Using reference:", ref)
 
     sd_table_name = 'sd_%s_%s' % (args.rover_name, args.base_name)
     if args.verbose:
-      print
-      print "Writing table '%s' of single differences:" % sd_table_name
-      print
+      print("\nWriting table '%s' of single differences:\n" % sd_table_name)
     h5[sd_table_name] = sds(h5[args.rover_name], h5[args.base_name])
     if args.verbose:
-      print str(h5[sd_table_name])
-      print
+      print(str(h5[sd_table_name]))
 
     dd_table_name = 'dd_%s_%s' % (args.rover_name, args.base_name)
     if args.verbose:
-      print
-      print "Writing table '%s' of double differences:" % dd_table_name
-      print
+      print("\nWriting table '%s' of double differences:\n" % dd_table_name)
     h5[dd_table_name] = dds(h5[args.rover_name], h5[args.base_name], ref)
     if args.verbose:
-      print h5[dd_table_name]
-      print
+      print(h5[dd_table_name])
 
     h5.close()
 

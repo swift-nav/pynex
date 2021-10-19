@@ -19,8 +19,15 @@ Alternatively, if you are developing pyNEX and want to install a link to your wo
     $ python setup.py develop
 
 
-Usage
------
+Interactive Usage
+-----------------
+The ``` demo_pynex.py ``` script demonstrates usage from IPython
+
+Upon getting the pandas data back, you can use methods .save_hdf5() or .save_pickle() 
+if HDF5 isn't working on your system.
+
+Command Line Usage
+------------------
 
 As well as being a library, pyNEX comes with two command line utilities.
 

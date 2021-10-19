@@ -8,40 +8,39 @@
 # THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
 # EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
-
+from __future__ import division,absolute_import
 import datetime
 import pandas
 import numpy as np
-
-def floatornan(x):
-    if x == '' or x[-1] == ' ':
-        return np.NaN
-    else:
-        return float(x)
-
-def digitorzero(x):
-    if x == ' ' or x == '':
-        return 0
-    else:
-        return int(x)
+from os.path import expanduser, splitext
+import sys
+from six import BytesIO,PY3
 
 def padline(l, n=16):
     x = len(l)
-    x_ = n * ((x + n - 1) / n)
+    x_ = n * ((x + n - 1) // n)
     return l + ' ' * (x_ - x)
 
-TOTAL_SATS = 32
+TOTAL_SATS = 32 #FIXME this will need to change for including more than just "G" systems!
+
 
 class RINEXFile:
-    def __init__(self, filename):
-        with open(filename, 'r') as f:
-          self._read_header(f)
-          self._read_data(f)
+    def __init__(self, filename,maxchunk=None):
+        self.maxchunk = maxchunk  # if you have a gigantic gigabyte size file,
+         #maybe you just want to try reading the first part of it to see what's in there
 
-    def save_hdf5(self, filename, append=True):
-        h5 = pandas.HDFStore(filename, 'a' if append else 'w')
-        h5[self.marker_name] = self.data
-        h5.close()
+        with open(expanduser(filename), 'r') as f:
+            self._read_header(f)
+            self._read_data(f)
+
+    def save_hdf5(self, filename, append=True): #this can hard crash Python on some setups due to HDF5 version conflict
+        with pandas.HDFStore(expanduser(filename), 'a' if append else 'w') as h:
+            h[self.marker_name] = self.data
+
+    def save_pickle(self,filename): #last resort for those having HDF5 trouble
+        fp = splitext(expanduser(filename))
+        self.data.to_pickle(''.join((fp[0],'_',str(self.marker_name),fp[1])))
+
 
     def _read_header(self, f):
         version_line = padline(f.readline(), 80)
@@ -78,10 +77,14 @@ class RINEXFile:
                 if self.marker_name == '':
                   self.marker_name = 'UNKNOWN'
             if label == "# / TYPES OF OBSERV":
-                n_obs = int(line[0:6])
-                self.obs_types = []
-                for i in range(0, n_obs):
-                    self.obs_types.append(line[10+6*i:12+6*i])
+                n_obs = int(line[:6])
+                self.obs_types = self._read_by_len(line[10:60],n_obs)
+                while len(self.obs_types)<n_obs: #in case more than one obs_type line (more than 9 obs_types)
+                    line = padline(f.readline(), 80)
+                    self.obs_types.extend(self._read_by_len(line[10:60],n_obs))
+
+    def _read_by_len(self,s,n_obs): #this could be done better with itertools
+        return [s[6*i:2+6*i] for i in range(n_obs) if s[6*i:2+6*i].strip()]
 
     def _read_epoch_header(self, f):
         epoch_hdr = f.readline()
@@ -93,13 +96,15 @@ class RINEXFile:
             year += 1900
         else:
             year += 2000
-        month = int(epoch_hdr[4:6])
-        day = int(epoch_hdr[7:9])
-        hour = int(epoch_hdr[10:12])
-        minute = int(epoch_hdr[13:15])
-        second = int(epoch_hdr[15:18])
-        microsecond = int(epoch_hdr[19:25]) # Discard the least sig. fig. (use microseconds only).
-        epoch = datetime.datetime(year, month, day, hour, minute, second, microsecond)
+
+        epoch = datetime.datetime(year,
+                                  month= int(epoch_hdr[4:6]),
+                                  day  = int(epoch_hdr[7:9]),
+                                  hour = int(epoch_hdr[10:12]),
+                                  minute=int(epoch_hdr[13:15]),
+                                  second=int(epoch_hdr[15:18]),
+                                  microsecond=int(epoch_hdr[19:25])*100000  # Discard the least sig. fig. (use microseconds only).
+                                  )
 
         flag = int(epoch_hdr[28])
         if flag != 0:
@@ -119,15 +124,20 @@ class RINEXFile:
         lli = np.zeros((TOTAL_SATS, len(self.obs_types)), dtype=np.uint8)
         signal_strength = np.zeros((TOTAL_SATS, len(self.obs_types)), dtype=np.uint8)
 
-        for i in range(n_sat):
-            # Join together observations for a single satellite if split across lines.
-            obs_line = ''.join(padline(f.readline()[:-1], 16) for _ in range((len(self.obs_types) + 4) / 5))
+        nline = n_sat*len(self.obs_types)//5
+        obs_txt = ''.join(f.readline() for _ in range(nline))
 
-            for j in range(len(self.obs_types)):
-                obs_record = obs_line[16*j:16*(j+1)]
-                obs[sat_map[i], j] = floatornan(obs_record[0:14])
-                lli[sat_map[i], j] = digitorzero(obs_record[14:15])
-                signal_strength[sat_map[i], j] = digitorzero(obs_record[15:16])
+        smtake = sat_map>=0
+        sm = sat_map[smtake].astype(int) #FIXME _read_data_chunk discards all non-"G" systems e.g. GLONASS!
+        if PY3:
+            strio = BytesIO(obs_txt.encode())
+        else:
+            strio = BytesIO(obs_txt)
+        x = np.genfromtxt(strio, delimiter=(14,1,1, 14,1,1, 14,1,1, 14,1,1, 14,1,1)).reshape((n_sat,-1),order='C')
+
+        obs[sm,:]             = x[smtake,::3]
+        lli[sm,:]             = x[smtake,1::3].astype(np.uint8)
+        signal_strength[sm,:] = x[smtake,2::3].astype(np.uint8)
 
         return obs, lli, signal_strength
 
@@ -152,6 +162,7 @@ class RINEXFile:
                     sat_map[n] = int(sat[1:]) - 1
             obss[i], llis[i], signal_strengths[i] = self._read_obs(f, len(sats), sat_map)
             i += 1
+            #if not i % 1000: print('chunk {:0.1f}'.format(i/CHUNK_SIZE*100))
             if i >= CHUNK_SIZE:
                 break
 
@@ -166,6 +177,7 @@ class RINEXFile:
             if obss.shape[0] == 0:
                 break
 
+
             obs_data_chunks.append(pandas.Panel(
                 np.rollaxis(obss, 1, 0),
                 items=['G%02d' % d for d in range(1, 33)],
@@ -173,11 +185,16 @@ class RINEXFile:
                 minor_axis=self.obs_types
             ).dropna(axis=0, how='all').dropna(axis=2, how='all'))
 
+            nchunk = len(obs_data_chunks)
+
+            print('{} chunks collected.'.format(nchunk))
+            if self.maxchunk and nchunk>=self.maxchunk: break
+
         self.data = pandas.concat(obs_data_chunks, axis=1)
 
 
 def main():
-    import sys
+    #import sys
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -196,17 +213,17 @@ def main():
 
     if args.info:
         if args.marker_name is None:
-            print "Marker Name:", rf.marker_name
+            print("Marker Name:", rf.marker_name)
         else:
-            print "Marker Name: %s (overriden, was %s)" % (args.marker_name, rf.marker_name)
-        print "RINEX Version:", rf.version
+            print("Marker Name: %s (overriden, was %s)" % (args.marker_name, rf.marker_name))
+        print("RINEX Version:", rf.version)
         if rf.comment != '':
-            print "Comment:"
-            print rf.comment
-        print "Obervation types:", ', '.join(rf.data.axes[2])
-        print "Satellites:", ', '.join(rf.data.axes[0])
-        print "Total %d observations:\n\tfrom\t%s\n\tto\t%s" % \
-            (len(rf.data.axes[1]), rf.data.axes[1][0], rf.data.axes[1][-1])
+            print("Comment:")
+            print(rf.comment)
+        print("Obervation types:", ', '.join(rf.data.axes[2]))
+        print("Satellites:", ', '.join(rf.data.axes[0]))
+        print("Total %d observations:\n\tfrom\t%s\n\tto\t%s" % \
+            (len(rf.data.axes[1]), rf.data.axes[1][0], rf.data.axes[1][-1]))
 
     if args.marker_name is not None:
         rf.marker_name = args.marker_name
